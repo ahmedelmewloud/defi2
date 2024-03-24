@@ -16,6 +16,12 @@ import io
 import urllib
 
 def index(request):
+    if request.method == 'POST':
+        choix = request.POST.get('choix')
+        if choix == 'app':
+            return redirect('graph_page')
+        elif choix == 'aco':
+            return redirect('graphe_aco2')
     return render(request, 'index.html')
 # df = 0
 def import_excel(request):
@@ -34,8 +40,6 @@ def import_excel(request):
             return render(request, 'h.html', {'error_message': 'Le fichier doit être au format Excel (.xlsx)'})
     else:
         return render(request, 'h.html')
-
-
 
 
 
@@ -83,7 +87,7 @@ def graph_page(request):
     path_villes = [df.iloc[i]['Ville'] for i in path_indices]
     
     # Préparation des positions des villes pour le tracé
-    pos = {df.iloc[i]['Ville']: (df.iloc[i]['Longitude'], df.iloc[i]['Latitude']) for i in path_indices}
+    pos = {df.iloc[i]['Ville']: (df.iloc[i]['Longitude'] - 0.5, df.iloc[i]['Latitude']) for i in path_indices}
     
     # Création du graphe pour le tracé
     G = nx.Graph()
@@ -91,10 +95,14 @@ def graph_page(request):
         G.add_edge(df.iloc[path_indices[i]]['Ville'], df.iloc[path_indices[i + 1]]['Ville'])
     
     plt.figure(figsize=(12, 8))
-    nx.draw_networkx_nodes(G, pos, node_size=500, node_color='lightblue')
+    nx.draw_networkx_nodes(G, pos, node_size=2, node_color='red')
     nx.draw_networkx_labels(G, pos)
     nx.draw_networkx_edges(G, pos, edgelist=[(path_villes[i], path_villes[i+1]) for i in range(len(path_villes)-2)], edge_color='blue', arrows=False)
     nx.draw_networkx_edges(G, pos, edgelist=[(path_villes[-2], path_villes[-1])], edge_color='red', arrows=True, style='dashed')
+
+    # Ajout de la légende
+    plt.text(0.5, 1.05, 'Rouge: Retour', transform=plt.gca().transAxes, ha='center')
+    plt.text(0.5, 1.02, 'Bleu: Aller', transform=plt.gca().transAxes, ha='center')
 
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
@@ -105,6 +113,13 @@ def graph_page(request):
     image_base64 = base64.b64encode(image_png).decode('utf-8')
 
     return render(request, 'graph_page.html', {'image_base64': image_base64})
+
+
+
+
+
+
+
 
 def graphe_aco2(request):
     # Chargement des données
@@ -170,7 +185,7 @@ def graphe_aco2(request):
     pos = nx.get_node_attributes(G, 'pos')
 
     plt.figure(figsize=(10, 8))
-    nx.draw_networkx_nodes(G, pos, node_size=2500, node_color="blue")
+    nx.draw_networkx_nodes(G, pos, node_size=20, node_color="blue")
     nx.draw_networkx_labels(G, pos, font_size=8, font_weight="bold")
     nx.draw_networkx_edges(G, pos, edgelist=G.edges(), edge_color="gray")
     plt.title('Tournée minimale en Mauritanie avec ACO')
@@ -191,3 +206,7 @@ def graphe_aco2(request):
 
     # Passer la chaîne Base64 à la page HTML pour l'affichage
     return render(request, 't.html', {'image_base64': image_base64})
+
+
+
+
