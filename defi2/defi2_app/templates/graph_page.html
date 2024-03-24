@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #graph-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        #download-button {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Graph Page</h1>
+    <div id="graph-container">
+        <img id="graph-image" src="data:image/png;base64,{{ image_base64 }}" alt="Graph">
+    </div>
+    <div id="download-button">
+        <a href="#" id="download-link" download="graph.png">Télécharger le graphe</a>
+    </div>
+
+    <script>
+        document.getElementById('download-link').addEventListener('click', function() {
+            // Convertir l'image en entier lors du téléchargement
+            var graphImage = document.getElementById('graph-image');
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = graphImage.width;
+            canvas.height = graphImage.height;
+            context.drawImage(graphImage, 0, 0);
+            this.href = canvas.toDataURL('image/png').replace(/^data:image\/[^;]/, 'data:application/octet-stream');
+        });
+    </script>
+</body>
+</html>
+
+
+
