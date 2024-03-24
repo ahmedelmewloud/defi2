@@ -1,5 +1,7 @@
+file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\defi2_app\Cordonnees_GPS.xlsx"
+
 from django.http import JsonResponse
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect,HttpResponse
 import pandas as pd
 from django.core.files.storage import default_storage
 from django.conf import settings
@@ -13,7 +15,7 @@ from io import BytesIO
 from geopy.distance import geodesic
 import pandas as pd
 import io
-import urllib
+import matplotlib.animation as animation
 
 def index(request):
     if request.method == 'POST':
@@ -22,8 +24,14 @@ def index(request):
             return redirect('graph_page')
         elif choix == 'aco':
             return redirect('graphe_aco2')
+        elif choix == 'aco_graph':
+             return redirect('graphe_aco')
+        elif choix == 'app_graph':
+            return redirect('graph_p')
+        elif choix == 'Apr_anim':
+            return redirect('graph_approx_anim')
     return render(request, 'index.html')
-# df = 0
+
 def import_excel(request):
     if request.method == 'POST':
         excel_file = request.FILES.get('excel_file')
@@ -41,75 +49,154 @@ def import_excel(request):
     else:
         return render(request, 'h.html')
 
-def graph_page(request):
-    # Chemin du fichier Excel
-    file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\Cordonnees_GPS.xlsx"
+# def graph_page(request):
+#     files = os.listdir()
+#     # Filter Excel files
+#     excel_files = [file for file in files if file.endswith('.xlsx')]
+#     # Check if there's exactly one Excel file in the directory
+#     if len(excel_files) == 1:
+#         # Read the Excel file
+#         excel_file_path = excel_files[0]
 
+#         # Lecture des données du fichier Excel
+#         df = pd.read_excel(excel_file_path)
+
+#         # Préparation des données pour le tracé
+#         x = df['Longitude']
+#         y = df['Latitude']
+#         labels = df['Ville']
+
+#         # Création du graphe sous forme de scatter plot avec les lignes reliant les points
+#         plt.figure(figsize=(12, 8))
+
+#         # Tracé des points
+#         plt.scatter(x, y, color='lightblue', edgecolors='black')
+#         for i, label in enumerate(labels):
+#             plt.text(x[i], y[i], label, fontsize=8, ha='right')
+
+#         # Tracé des lignes reliant les points
+#         for i in range(len(df)):
+#             plt.plot([x[i]], [y[i]], marker='o', markersize=5, color='red')
+#             if i < len(df) - 1:
+#                 plt.plot([x[i], x[i+1]], [y[i], y[i+1]], linestyle='-', color='blue')
+
+#         # Configuration des axes et du titre
+#         plt.xlabel('Longitude')
+#         plt.ylabel('Latitude')
+#         plt.title('Villes - Coordonnées GPS')
+
+#         # Ajout de la grille
+#         plt.grid(True)
+
+#         # Modification de la couleur de l'arrière-plan
+#         plt.gca().set_facecolor('white')
+
+#         # Conversion du graphe en image et encodage en base64
+#         buffer = io.BytesIO()
+#         plt.savefig(buffer, format='png')
+#         buffer.seek(0)
+#         image_png = buffer.getvalue()
+#         buffer.close()
+#         image_base64 = base64.b64encode(image_png).decode('utf-8')
+
+#         return render(request, 'Approx_graph.html', {'image_base64': image_base64})
+#     return HttpResponse("error")
+
+
+
+
+def graph_page(request):
+  
+    
     # Lecture des données du fichier Excel
     df = pd.read_excel(file_path)
 
-    # Préparation des données pour le tracé
-    x = df['Longitude']
-    y = df['Latitude']
-    labels = df['Ville']
+    # Initialisation de la matrice des distances
+    n = len(df)
+    distances = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                coord1 = (df.iloc[i]['Latitude'], df.iloc[i]['Longitude'])
+                coord2 = (df.iloc[j]['Latitude'], df.iloc[j]['Longitude'])
+                distances[i][j] = geodesic(coord1, coord2).km
 
-    # Création du graphe sous forme de scatter plot avec les lignes reliant les points
+    # Trouver l'index de Nouakchott
+    start_index = df.index[df['Ville'].str.strip() == 'Nouakchott'].tolist()[0]
+
+    # Heuristique du plus proche voisin pour le TSP
+    def nearest_neighbor_tsp(start_index, distances):
+        path = [start_index]
+        n = len(distances)
+        mask = np.zeros(n, dtype=bool)
+        mask[start_index] = True
+
+        for _ in range(n - 1):
+            last = path[-1]
+            next_indices = np.argsort(distances[last])
+            for next_index in next_indices:
+                if not mask[next_index]:
+                    path.append(next_index)
+                    mask[next_index] = True
+                    break
+
+        path.append(start_index)  # Retour à la ville de départ pour fermer le circuit
+        return path
+
+    # Calculer le chemin
+    path_indices = nearest_neighbor_tsp(start_index, distances)
+    path_villes = [df.iloc[i]['Ville'] for i in path_indices]
+
+    # Préparation des positions des villes pour le tracé
+    pos = {df.iloc[i]['Ville']: (df.iloc[i]['Longitude'], df.iloc[i]['Latitude']) for i in path_indices}
+
+    # Création du graphe pour le tracé
+    G = nx.Graph()
+    for i in range(len(path_indices) - 1):
+        G.add_edge(df.iloc[path_indices[i]]['Ville'], df.iloc[path_indices[i + 1]]['Ville'])
+
     plt.figure(figsize=(12, 8))
+    # Nuage de points pour les villes
+    for ville, (x, y) in pos.items():
+        plt.scatter(x, y, color='lightblue', edgecolor='black')
+        plt.text(x, y, ville, fontsize=9, ha='right', va='bottom')
 
-    # Tracé des points
-    plt.scatter(x, y, color='lightblue', edgecolors='black')
-    for i, label in enumerate(labels):
-        plt.text(x[i], y[i], label, fontsize=8, ha='right')
+    # Tracer les lignes reliant les points
+    for i in range(len(path_villes) - 1):
+        ville1 = path_villes[i]
+        ville2 = path_villes[i + 1]
+        plt.plot([pos[ville1][0], pos[ville2][0]], [pos[ville1][1], pos[ville2][1]], color='blue')
 
-    # Tracé des lignes reliant les points
-    for i in range(len(df)):
-        plt.plot([x[i]], [y[i]], marker='o', markersize=5, color='red')
-        if i < len(df) - 1:
-            plt.plot([x[i], x[i+1]], [y[i], y[i+1]], linestyle='-', color='blue')
+    # Ajouter une flèche indiquant le départ de Nouakchott vers Rosso
+    plt.annotate('', xy=pos['Rosso'], xytext=pos['Nouakchott'], arrowprops=dict(facecolor='red', arrowstyle='->'))
 
-    # Configuration des axes et du titre
+    plt.title('Nuage de points avec lignes reliant les villes')
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
-    plt.title('Villes - Coordonnées GPS')
-
-    # Ajout de la grille
     plt.grid(True)
-
-    # Modification de la couleur de l'arrière-plan
-    plt.gca().set_facecolor('white')
-
-    # Conversion du graphe en image et encodage en base64
+    
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
     buffer.seek(0)
     image_png = buffer.getvalue()
     buffer.close()
+
     image_base64 = base64.b64encode(image_png).decode('utf-8')
 
-    return render(request, 'graph_page.html', {'image_base64': image_base64})
-
-
-
-
-
-
-
+    return render(request, 'Approx_graph.html', {'image_base64': image_base64})
 
 
 
 from django.views.decorators.cache import cache_page
-from django.shortcuts import render
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
-import base64
 from geopy.distance import geodesic
 
 @cache_page(60 * 15)  # Cache for 15 minutes (in seconds)
 def graphe_aco2(request):
     # Chargement des données
-    file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\Cordonnees_GPS.xlsx"  # Mettez ici le chemin correct vers votre fichier Excel
+ # Mettez ici le chemin correct vers votre fichier Excel
     df = pd.read_excel(file_path, sheet_name='Capitales_Wilaya')
 
     # Trouver l'index de Nouakchott
@@ -206,12 +293,31 @@ def graphe_aco2(request):
     plt.close()
 
     # Passer la chaîne Base64 à la page HTML pour l'affichage
-    return render(request, 't.html', {'image_base64': image_base64})
+    return render(request, 'ACO_REP.html', {'image_base64': image_base64})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def graphe_aco(request):
     # Chargement des données
-    file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\Cordonnees_GPS.xlsx" # Mettez ici le chemin correct vers votre fichier Excel
+     # Mettez ici le chemin correct vers votre fichier Excel
     df = pd.read_excel(file_path, sheet_name='Capitales_Wilaya')
 
     # Trouver l'index de Nouakchott
@@ -293,7 +399,7 @@ def graphe_aco(request):
     plt.close()
 
     # Passer la chaîne Base64 à la page HTML pour l'affichage
-    return render(request, 't1.html', {'image_base64': image_base64})
+    return render(request, 'ACO_GRAPH.html', {'image_base64': image_base64})
 import pandas as pd
 import numpy as np
 import networkx as nx
@@ -301,87 +407,7 @@ import matplotlib.pyplot as plt
 import io
 import base64
 from geopy.distance import geodesic
-
-def graph_page(request):
-    # Chemin du fichier Excel
-    file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\Cordonnees_GPS.xlsx"
-
-    # Lecture des données du fichier Excel
-    df = pd.read_excel(file_path)
-
-    # Initialisation de la matrice des distances
-    n = len(df)
-    distances = np.zeros((n, n))
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                coord1 = (df.iloc[i]['Latitude'], df.iloc[i]['Longitude'])
-                coord2 = (df.iloc[j]['Latitude'], df.iloc[j]['Longitude'])
-                distances[i][j] = geodesic(coord1, coord2).km
-
-    # Trouver l'index de Nouakchott
-    start_index = df.index[df['Ville'].str.strip() == 'Nouakchott'].tolist()[0]
-
-    # Heuristique du plus proche voisin pour le TSP
-    def nearest_neighbor_tsp(start_index, distances):
-        path = [start_index]
-        n = len(distances)
-        mask = np.zeros(n, dtype=bool)
-        mask[start_index] = True
-
-        for _ in range(n - 1):
-            last = path[-1]
-            next_indices = np.argsort(distances[last])
-            for next_index in next_indices:
-                if not mask[next_index]:
-                    path.append(next_index)
-                    mask[next_index] = True
-                    break
-
-        path.append(start_index)  # Retour à la ville de départ pour fermer le circuit
-        return path
-
-    # Calculer le chemin
-    path_indices = nearest_neighbor_tsp(start_index, distances)
-    path_villes = [df.iloc[i]['Ville'] for i in path_indices]
-
-    # Préparation des positions des villes pour le tracé
-    pos = {df.iloc[i]['Ville']: (df.iloc[i]['Longitude'], df.iloc[i]['Latitude']) for i in path_indices}
-
-    # Création du graphe pour le tracé
-    G = nx.Graph()
-    for i in range(len(path_indices) - 1):
-        G.add_edge(df.iloc[path_indices[i]]['Ville'], df.iloc[path_indices[i + 1]]['Ville'])
-
-    plt.figure(figsize=(12, 8))
-    # Nuage de points pour les villes
-    for ville, (x, y) in pos.items():
-        plt.scatter(x, y, color='lightblue', edgecolor='black')
-        plt.text(x, y, ville, fontsize=9, ha='right', va='bottom')
-
-    # Tracer les lignes reliant les points
-    for i in range(len(path_villes) - 1):
-        ville1 = path_villes[i]
-        ville2 = path_villes[i + 1]
-        plt.plot([pos[ville1][0], pos[ville2][0]], [pos[ville1][1], pos[ville2][1]], color='blue')
-
-    # Ajouter une flèche indiquant le départ de Nouakchott vers Rosso
-    plt.annotate('', xy=pos['Rosso'], xytext=pos['Nouakchott'], arrowprops=dict(facecolor='red', arrowstyle='->'))
-
-    plt.title('Nuage de points avec lignes reliant les villes')
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
-    plt.grid(True)
-    
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    image_png = buffer.getvalue()
-    buffer.close()
-
-    image_base64 = base64.b64encode(image_png).decode('utf-8')
-
-    return render(request, 'graph_page.html', {'image_base64': image_base64})
+import os
 
 
 
@@ -392,7 +418,7 @@ def graph_page(request):
 
 def graph_p(request):
     # Chemin du fichier Excel
-    file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\Cordonnees_GPS.xlsx"
+    # file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\Cordonnees_GPS.xlsx"
 
     # Lecture des données du fichier Excel
     df = pd.read_excel(file_path)
@@ -447,6 +473,10 @@ def graph_p(request):
     nx.draw_networkx_edges(G, pos, edgelist=[(path_villes[i], path_villes[i+1]) for i in range(len(path_villes)-2)], edge_color='blue', arrows=False)
     nx.draw_networkx_edges(G, pos, edgelist=[(path_villes[-2], path_villes[-1])], edge_color='red', arrows=True, style='dashed')
 
+    # Ajouter la légende
+    plt.text(0.02, 0.98, 'Rouge indique Retour', color='red', fontsize=12, transform=plt.gca().transAxes)
+    plt.text(0.02, 0.94, 'Bleu indique Aller', color='blue', fontsize=12, transform=plt.gca().transAxes)
+
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
     buffer.seek(0)
@@ -455,8 +485,108 @@ def graph_p(request):
 
     image_base64 = base64.b64encode(image_png).decode('utf-8')
 
-    return render(request, 'graph_p.html', {'image_base64': image_base64})
+    return render(request, 'Approx_rep.html', {'image_base64': image_base64})
 
+import tempfile
+
+import os
+
+import os
+import pandas as pd
+import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from geopy.distance import geodesic
+import io
+import base64
+
+def graph_approx_anim(request):
+    # Chemin du fichier Excel
+    # file_path = r"C:\Users\LAPTOP\Desktop\defi2\defi2\Cordonnees_GPS.xlsx"
+
+    # Lecture des données du fichier Excel
+    df = pd.read_excel(file_path)
+
+    # Initialisation de la matrice des distances
+    n = len(df)
+    distances = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                coord1 = (df.iloc[i]['Latitude'], df.iloc[i]['Longitude'])
+                coord2 = (df.iloc[j]['Latitude'], df.iloc[j]['Longitude'])
+                distances[i][j] = geodesic(coord1, coord2).km
+
+    # Trouver l'index de Nouakchott
+    start_index = df.index[df['Ville'].str.strip() == 'Nouakchott'].tolist()[0]
+
+    # Heuristique du plus proche voisin pour le TSP
+    def nearest_neighbor_tsp(start_index, distances):
+        path = [start_index]
+        n = len(distances)
+        mask = np.zeros(n, dtype=bool)
+        mask[start_index] = True
+
+        for _ in range(n - 1):
+            last = path[-1]
+            next_indices = np.argsort(distances[last])
+            for next_index in next_indices:
+                if not mask[next_index]:
+                    path.append(next_index)
+                    mask[next_index] = True
+                    break
+
+        path.append(start_index)  # Retour à la ville de départ pour fermer le circuit
+        return path
+
+    # Calculer le chemin
+    path_indices = nearest_neighbor_tsp(start_index, distances)
+    path_villes = [df.iloc[i]['Ville'] for i in path_indices]
+
+    # Préparation des positions des villes pour le tracé
+    pos = {df.iloc[i]['Ville']: (df.iloc[i]['Longitude'], df.iloc[i]['Latitude']) for i in path_indices}
+
+    # Création du graphe pour le tracé
+    G = nx.Graph()
+    for i in range(len(path_indices) - 1):
+        G.add_edge(df.iloc[path_indices[i]]['Ville'], df.iloc[path_indices[i + 1]]['Ville'])
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    # Nuage de points pour les villes
+    for ville, (x, y) in pos.items():
+        ax.scatter(x, y, color='lightblue', edgecolor='black')
+        ax.text(x, y, ville, fontsize=9, ha='right', va='bottom')
+
+    # Tracer les lignes reliant les points
+    line, = ax.plot([], [], color='blue')
+
+    # Ajouter une flèche indiquant le départ de Nouakchott vers Rosso
+    ax.annotate('', xy=pos['Rosso'], xytext=pos['Nouakchott'], arrowprops=dict(facecolor='red', arrowstyle='->'))
+
+    def animate(i):
+        line.set_data([pos[path_villes[i]][0], pos[path_villes[i + 1]][0]],
+                      [pos[path_villes[i]][1], pos[path_villes[i + 1]][1]])
+
+    # Définir une valeur de délai plus grande pour ralentir l'animation
+    interval = 700  # 200 millisecondes entre chaque image de l'animation
+
+    # Créer l'animation avec le délai spécifié
+    anim = animation.FuncAnimation(fig, animate, frames=len(path_villes) - 1, repeat=False, interval=interval)
+
+    # Enregistrer l'animation dans un répertoire temporaire personnalisé
+    temp_dir = '/chemin/vers/votre/repertoire/temporaire'  # Spécifiez le chemin de votre répertoire temporaire personnalisé
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_file = os.path.join(temp_dir, 'animation.gif')
+    anim.save(temp_file, writer='pillow')
+
+    # Lire le fichier temporaire et encoder en base64
+    with open(temp_file, 'rb') as f:
+        image_data = f.read()
+
+    image_base64 = base64.b64encode(image_data).decode('utf-8')
+
+    return render(request, 'Approx_graph_animation.html', {'image_base64': image_base64})
 
 
 

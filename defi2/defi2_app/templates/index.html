@@ -1,19 +1,112 @@
-{% load static %}
 
-<!DOCTYPE html>
-<html lang="fr">
+{% load static %}
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Barre de Navigation</title>
-<link rel="stylesheet" href="{% static 'style.css' %}">
-<style>
-  * {
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Your Website{% endblock %}</title>
+   
+    <style>
+
+body {
+    font-family: 'Arial', sans-serif;  
+    background-color: #e0e9f7; /* Soft background color */
     margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    padding: 20px;
 }
 
+.container {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    max-width: 600px; 
+    margin: 20px auto;
+}
+
+.introduction {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+label[for="file"] {
+    background-color: #e8e8e8;
+    color: #444;
+    padding: 12px 20px;
+    border-radius: 6px;
+    display: inline-block;
+    cursor: pointer;
+    transition: background-color 0.3s; /* Smooth transition on hover */
+}
+
+label[for="file"]:hover {
+    background-color: #d8d8d8;
+}
+
+button {
+    background-color: #e0f0e9; /* Example soft green */
+    color: #444;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #c5e3d2;
+}
+
+select  { 
+   border-radius: 6px;
+   padding: 8px 12px;
+   border: 1px solid #ddd;
+}
+
+#show-solution, 
+#show-map {
+    display: block; /* Display as block for better spacing */
+    margin: 15px 0; 
+}
+
+#solution {
+    margin-top: 20px;
+}
+
+#optimal-route {
+    font-weight: bold;
+}
+/* ... (Your existing CSS) */
+/* ... your existing CSS ... */
+
+form {
+    margin-bottom: 25px; 
+}
+
+.form-group { /* Added class for styling */
+    margin-bottom: 15px; /* Space between form groups */
+}
+
+label {
+    display: block; 
+    margin-bottom: 8px; 
+    font-weight: 500; 
+}
+
+select {
+    width: 100%; 
+    padding: 12px 30px; /* Increased padding */
+    border: 1px solid #ddd; 
+    border-radius: 6px; 
+    appearance: none; 
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23444'><polygon points='12 5 8 9 4 5 12 5'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center; 
+}
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -23,111 +116,55 @@
     padding: 10px 20px;
 }
 
-.nav-links {
-    list-style: none;
-}
-
-.nav-links li {
-    display: inline-block;
-    padding: 0 20px;
-}
-
-.nav-links a {
-    text-decoration: none;
-    color: white;
-}
-
-.logo {
-    font-size: 24px;
-    font-weight: bold;
-}
-
-.burger div {
-    width: 25px;
-    height: 3px;
-    background-color: white;
-    margin: 5px;
-    transition: all 0.3s ease;
-}
-
-@media screen and (max-width: 768px) {
-    .nav-links {
-        position: absolute;
-        right: 0px;
-        height: 92vh;
-        top: 8vh;
-        background-color: #333;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 50%;
-        transform: translateX(100%);
-        transition: transform 0.5s ease-in;
-    }
-    .nav-links li {
-        opacity: 0;
-    }
-    .burger {
-        display: block;
-    }
-}
-form {
-            width: 50%; /* Définir la largeur du formulaire */
-            margin: 0 auto; /* Centrer le formulaire */
-            margin-top: 100px; /* Marge en haut */
-            text-align: center; /* Centrer le contenu du formulaire */
-        }
-        
-        /* Style pour le select */
-        select {
-            border-radius: 5px;
-            width: 300px;
-            height: 29px; /* Ajouter un border-radius */
-        }
-
-        /* Style pour le bouton */
-        button {
-            border-radius: 5px; /* Ajouter un border-radius */
-            background-color: #4CAF50; /* Ajouter une couleur de fond */
-            color: white; /* Couleur du texte */
-            padding: 10px 20px; /* Ajouter un espace de remplissage */
-            text-align: center; /* Centrer le texte */
-            text-decoration: none; /* Supprimer la décoration du texte */
-            display: inline-block; /* Afficher comme un bloc */
-            font-size: 16px; /* Taille de la police */
-            margin-top: 10px; /* Ajouter une marge en haut */
-            cursor: pointer; /* Curseur de la souris */
-            border: none; /* Supprimer les bordures */
-        }
-
-        /* Style pour le bouton au survol */
-        button:hover {
-            background-color: #45a049; /* Changer la couleur de fond au survol */
-        }
-
-
-
-</style>
+    </style>
 </head>
-
 <body>
+    <nav class="navbar" >
+        <div class="logo" style="margin-left: 500px;">SupNum Solver</div>
+    </nav>
 
-<nav class="navbar">
-    <div class="logo" style="margin-left: 500px;">SupNum Solver</div>
+    <header>
+        </header>
 
-</nav>
+    <main>
+        <section class="introduction">
+            <div class="container">
+                <div class="upload-button">
+                    <input type="file" id="file" accept=".xlsx" onchange="uploadFile()">
+                    <label for="file">uploder un fichier Excel</label>
+                </div>
+            </div>
+        </section>
 
-<form action="{% url 'index' %}" method="post" style="margin-top: 100px;" >
-    {% csrf_token %}
-    <label for="">Method:</label>
-    <select id="method" name="choix">
-        <option value="app">Methode D'approximation</option>
-        <option value="aco">Methode ACO</option>
-    </select>
-    <br>
-    <br>
-    <button type="submit">continue</button>
-</form>
+        <section class="algorithm-selection">
+            <div class="container">
+                <form action="{% url 'index' %}" method="post" style="margin-top: 100px;" >
+                    {% csrf_token %}
+                    <label for="algorithm">Choisir un representation :</label>
+                    <div class="form-group">
+                    <select name="choix" >
+                        <option value="app">Representation graphique approximation</option>
+                        <option value="aco">Representation graphique ACO</option>
+                        <option value="app_graph">graphe approximation</option>
+                        <option value="aco_graph">graphe ACO</option>
+                        <option value="Apr_anim">Approximation animation </option>
+                    </select>
+                    </div>
+                    <div class="form-group">
+                    <label for="visualization">Visualisation graphique de la solution :</label>
+                    <select name="visualization" id="visualization" aria-placeholder="Visualisation">
+                        <option value="wilayas">Capitales des Wilayas</option>
+                    </select>
+          </div>
+
+   
+
+<button  type="submit">Afficher la solution</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+
 </body>
 </html>
-

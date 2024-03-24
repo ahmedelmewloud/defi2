@@ -17,15 +17,27 @@
             margin-top: 20px;
             text-align: center;
         }
+        .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+}
     </style>
 </head>
 <body>
-    <h1>Graph Page</h1>
+    <nav class="navbar" >
+        <div class="logo" style="margin-left: 500px;">SupNum Solver</div>
+    </nav>
+
+    <h1>le graphe Approximation</h1>
     <div id="graph-container">
         <img id="graph-image" src="data:image/png;base64,{{ image_base64 }}" alt="Graph">
     </div>
     <div id="download-button">
-        <a href="#" id="download-link" download="graph.png">Télécharger le graphe</a>
+     
     </div>
 
     <script>
