@@ -1,14 +1,4 @@
-{% load static %}
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Barre de Navigation</title>
-<link rel="stylesheet" href="{% static 'style.css' %}">
-<style>
-  * {
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -72,21 +62,3 @@
     }
 }
 
-
-</style>
-</head>
-
-<body>
-
-<nav class="navbar">
-    <div class="logo">MonSite</div>
-    <ul class="nav-links" style="margin-right:545px;">
-        <li class="col-2"><a href="#">Accueil</a></li>
-        <li class="col-"><a href="#">À propos</a></li>
-        <li class="col-2"><a href="#">Services</a></li>
-        <li class="col-2"><a href="#">Contact</a></li>
-    </ul>
-</nav>
-
-</body>
-</html>
